@@ -1,0 +1,118 @@
+{
+  "theme": "light",
+  "typography": {
+    "headings": {
+      "font": "Cormorant Garamond",
+      "style": "uppercase, tracking-widest",
+      "weights": ["600", "700"],
+      "usage": "Mission titles, section headers, Escape room card titles. MUST BE SERIF UPPERCASE."
+    },
+    "body": {
+      "font": "Crimson Text",
+      "weights": ["400", "600"],
+      "usage": "Historical texts, briefing paragraphs, and dossier content."
+    },
+    "ui": {
+      "font": "IBM Plex Mono",
+      "weights": ["400", "500", "700"],
+      "usage": "Timer, AI outputs, scores, buttons, HUD elements, and semantic code-like feedback."
+    }
+  },
+  "colors": {
+    "primary": {
+      "cream": "#FDF3D0",
+      "gold": "#D4A72C"
+    },
+    "text": {
+      "main": "#2B2620",
+      "muted": "#5C5446"
+    },
+    "semantic": {
+      "success": "#5B7A61",
+      "warning": "#B57A2A",
+      "error": "#9C4343"
+    },
+    "surfaces": {
+      "card": "#F5EAD6",
+      "drawer": "#FDF3D0",
+      "overlay": "rgba(43, 38, 32, 0.6)"
+    }
+  },
+  "visual_enhancers": {
+    "textures": [
+      "Use subtle SVG noise overlays or apply the provided paper texture image with mix-blend-multiply and low opacity (10-20%) over the cream background."
+    ],
+    "shadows": [
+      "Cards: shadow-[0_4px_24px_rgba(43,38,32,0.08)]",
+      "Inner shadows for 'stamp' effects or pressed states to simulate vintage embossing."
+    ],
+    "borders": [
+      "1px solid rgba(212, 167, 44, 0.5) for active/focused elements.",
+      "Dashed borders for drag-and-drop zones in Mission 3."
+    ],
+    "shapes": [
+      "Rounded corners for cards, buttons, and panels."
+    ]
+  },
+  "layouts": {
+    "app_structure": "Left/Center main content area + Right sidebar for Actions/Leaderboards. Footer fixed at bottom with text 'Made with ♥ by Nuova-Mente'.",
+    "teacher_dashboard": "Bento grid matrix (Mode B) for students x missions. High density, semantic color indicators.",
+    "mission_view": "Focused center card for active mission with right sliding drawer (Sheet) for Dossier sources.",
+    "cards": "Rounded corners with an overlay label anchored at the bottom edge."
+  },
+  "components": {
+    "timer": "Visible, non-blocking timer in HUD. Font: IBM Plex Mono. Subtle pulse animation on low time.",
+    "dossier_drawer": "Use Shadcn 'Sheet' component sliding from the right. Background must be opaque cream, no transparency.",
+    "drag_drop": "Two-column grid for 'cause remote vs immediate'. Muted background drop zones with dashed borders.",
+    "buttons": "Rounded/pill-shaped. Primary: bg-[#D4A72C] text-[#2B2620]. Secondary: transparent with gold outline.",
+    "file_extension": "USE .js and .jsx FILES EXCLUSIVELY. Do NOT create .tsx files."
+  },
+  "motion": {
+    "transitions": "Smooth translations for drawer slide. Avoid transition:all.",
+    "feedback": "Semantic color flashes on correct/incorrect actions. Typewriter reveal effect for new briefings."
+  },
+  "accessibility": {
+    "contrast": "Ensure text against #FDF3D0 and #D4A72C meets WCAG AA. Use #2B2620 for text to guarantee high contrast.",
+    "focus": "Gold outline ring (ring-[#D4A72C]) on focus-visible."
+  },
+  "image_urls": {
+    "paper_texture": {
+      "url": "https://images.unsplash.com/photo-1603484477859-abe6a73f9366?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2Nzh8MHwxfHNlYXJjaHwzfHx2aW50YWdlJTIwcGFwZXIlMjB0ZXh0dXJlfGVufDB8fHx8MTc4ODAwNjkxMnww&ixlib=rb-4.1.0&q=85",
+      "description": "Crumpled beige parchment paper texture",
+      "category": "background overlay"
+    },
+    "typewriter": {
+      "url": "https://images.unsplash.com/photo-1505682634904-d7c8d95cdc50?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1OTV8MHwxfHNlYXJjaHwyfHx0eXBld3JpdGVyJTIwdGV4dCUyMHZpbnRhZ2V8ZW58MHx8fHwxNzg4MDc1NTQyfDA&ixlib=rb-4.1.0&q=85",
+      "description": "Vintage Corona typewriter",
+      "category": "hero or briefing image"
+    },
+    "ww2_history": {
+      "url": "https://images.unsplash.com/photo-1571841653714-f542a5e00bdc?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2Njd8MHwxfHNlYXJjaHwxfHwxOTM5JTIwaGlzdG9yeSUyMHd3MnxlbnwwfHx8fDE3ODgwNzU1NDJ8MA&ixlib=rb-4.1.0&q=85",
+      "description": "Grayscale photography of soldier marching",
+      "category": "dossier source material"
+    }
+  },
+  "instructions_to_main_agent": [
+    "Strictly adhere to the design system: base `#FDF3D0`, gold `#D4A72C`, serif uppercase headings, rounded cards with bottom overlay labels.",
+    "Implement the layout with a right sidebar for Actions/Leaderboards and the footer 'Made with ♥ by Nuova-Mente'.",
+    "Use .js/.jsx for all files since this is a React+JS environment.",
+    "Build the 5 specific missions. Differentiate the 'historical' texts (serif) from the 'AI outputs' (mono font, slightly glitchy or highlightable).",
+    "Ensure the Timer is non-blocking and always visible in the HUD along with the score.",
+    "Use Shadcn UI properly, overriding styles with Tailwind to match the vintage dossier vibe.",
+    "Do NOT use transparent backgrounds for the drawer, dialogs, or dropdowns. Make them solid cream or blur with high opacity.",
+    "Teacher Dashboard: create a highly readable, dense grid (students rows, mission columns) with desaturated semantic colors for status.",
+    "Add 'data-testid' to all interactive and key informational elements."
+  ],
+  "UNIVERSAL_GUIDELINES_FOR_MAIN_AGENT": [
+    "You tend to converge toward generic outputs. Avoid this: make creative, distinctive frontends that surprise and delight.",
+    "Create depth through layered design elements with z-index hierarchy.",
+    "Use glass-morphism effects with backdrop filters (12-24px blur) ONLY if it does not compromise readability.",
+    "You MUST NOT apply universal transition (e.g., transition: all). Add transitions for specific interactive elements only.",
+    "You MUST NOT center align the app container. Align text naturally for readability.",
+    "Always use modern button styles with interaction animations & color relevant to the app style.",
+    "NEVER use AI assistant Emoji characters (🤖🧠💭) for icons. Use lucide-react icons.",
+    "Every interaction needs micro-animations - hover states, transitions, entrance animations.",
+    "Use generous spacing. Cramped designs look cheap.",
+    "Prioritize using pre-existing components from src/components/ui when applicable."
+  ]
+}

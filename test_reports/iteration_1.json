@@ -1,0 +1,123 @@
+{
+  "summary": "Full backend + frontend E2E test of 'Dossier 1939'. Created a pytest suite (41 tests, 36 passed = 87.8%) covering auth, catalogo, sessions, M1-M5 attempts, hint, forced unlock, finish, credits conversion, PDF, and all teacher endpoints. Playwright-tested student login (ok/ko), rooms, briefing, HUD timer, dossier drawer + search, M1 (fail path + hint + forced unlock), M2 (pass + bonus), M3 (8/8 via keyboard selection), M4 (pass + bonus, LLM), M5 (pass, LLM), Escape screen (88 pt / 3 credits / 1,5 h correct), PDF (HTTP 200 application/pdf), and the full teacher dashboard including class filter, attempts log and override (points + PBL hours recomputed and persisted). 3 distinct real defects found, 1 of them a hard progression blocker.",
+  "backend_issues": {
+    "critical": [
+      {
+        "endpoint": "POST /api/missions/1/attempt (llm_eval.rules_eval_m1 + server.evaluate)",
+        "issue": "A fully correct M1 answer is rejected. The LLM returns score 80-100, criteria_missing=[] and feedback 'Ottimo lavoro!...', but server.py line 297 vetoes it with the rules fallback, which fails because rules_eval_m1 only counts hits[0] per item: 'La crisi del 1929 (S02)' and 'La crisi della Societa' delle Nazioni (S10)' both collapse into the single keyword 'crisi' -> distinct=2 < 3. The exact example from the spec (Versailles S01 + crisi 1929 S02 + Societa' delle Nazioni S10) therefore CANNOT pass M1; students are pushed to forced unlock. Also produces contradictory output: 'Non superata - Avanzato - 0/20 pt' with congratulatory feedback.",
+        "priority": "CRITICAL"
+      },
+      {
+        "endpoint": "POST /api/missions/{n}/attempt (server.recompute)",
+        "issue": "current_mission is never persisted. recompute() $set only writes missions/bonuses/total_points/credits/pbl_hours/credits_note, so the s['current_mission'] = num+1 assignment in attempt() is lost. The API response returns current_mission=3 while GET /api/sessions/{id} returns 1. Consequence (reproduced in UI): a resumed session is HARD BLOCKED - mission-tab-2..5 are disabled, no next-mission-btn is rendered on reload, so a student who reloads after completing/forced-unlocking M1 cannot advance without burning another attempt. Briefing resume banner also always shows 'Prossima missione: M1'.",
+        "priority": "CRITICAL"
+      }
+    ],
+    "minor": [
+      {
+        "endpoint": "POST /api/missions/{n}/hint",
+        "issue": "Requesting a hint AFTER the mission is already passed retroactively removes 5 points (16 -> 11, total 26 -> 21). take_hint applies the penalty whenever completed=True. The hint-btn stays visible in the UI after passing, so this is one accidental click away."
+      },
+      {
+        "endpoint": "GET /api/teacher/leaderboard",
+        "issue": "No authentication at all (no teacher pin, no session check) - exposes student_name + total_points of any class to anonymous callers. Every other teacher endpoint requires the pin."
+      },
+      {
+        "endpoint": "POST /api/missions/{n}/attempt",
+        "issue": "After a forced unlock (completed=True, passed=False) further attempts are still accepted because the guard only checks 'completed and passed'. Attempts counter keeps growing past 3 (MAX_ATTEMPTS)."
+      }
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {
+        "component": "HUD.jsx / MissionRail",
+        "issue": "unlocked is computed as m.mission_num <= current where current is the ROUTE param n, not session.current_mission. Even after the backend persistence fix, loading /missione/{id}/1 on a session already at M3 leaves M2..M5 disabled. Should be current = max(routeNum, session.current_mission).",
+        "selector": "[data-testid=\"mission-tab-2\"]",
+        "priority": "HIGH"
+      },
+      {
+        "component": "Mission.jsx",
+        "issue": "On resubmit the previous result-panel stays mounted with STALE feedback/level/attempts-left for the whole 10-20 s of LLM latency (result state is not cleared in submit()). A student sees the old verdict and can misread it as the new one. Recommend setResult(null) at the start of submit().",
+        "selector": "[data-testid=\"result-panel\"]",
+        "priority": "MEDIUM"
+      },
+      {
+        "component": "Mission.jsx (Inventario indizi)",
+        "issue": "hint-btn is still rendered after the mission has been passed; clicking it triggers the retroactive -5 pt backend bug. Hide it when state.completed && state.passed.",
+        "selector": "[data-testid=\"hint-btn\"]",
+        "priority": "MEDIUM"
+      },
+      {
+        "component": "Teacher.jsx grid",
+        "issue": "An overridden cell shows only the new number, with no OVR/override marker (Escape.jsx recap does render 'OVR'). A teacher cannot tell an automatic score from a manual one in the grid.",
+        "selector": "[data-testid=\"cell-<sessionId>-<n>\"]",
+        "priority": "LOW"
+      }
+    ],
+    "integration_issues": [
+      {
+        "flow": "Session resume (reload of /missione/:sessionId/:num)",
+        "issue": "Reproduced: session 46ecdee0 has M1 completed via forced unlock (attempts 3/3, level 10) yet the rail shows M1..M5 with only M1 enabled and no next-mission-btn -> dead end. Combination of the backend current_mission persistence bug and the MissionRail route-param bug.",
+        "affected_selectors": ["[data-testid=\"mission-tab-2\"]", "[data-testid=\"next-mission-btn\"]"]
+      },
+      {
+        "flow": "M1 submission",
+        "issue": "Valid answer using the spec's own sources (S01/S02/S10) renders 'NON SUPERATA' + 'Tentativi rimasti: 2' while the evaluator flag says 'semantico (Claude Sonnet 4.6)' and criteria_missing is empty - no criterion is shown as missing, so the student has no idea what to fix.",
+        "affected_selectors": ["[data-testid=\"result-feedback\"]", "[data-testid=\"attempts-left\"]"]
+      }
+    ],
+    "design_issues": [
+      {
+        "screen": "Escape (/escape/:sessionId)",
+        "issues": ["Content occupies only the top ~50% of a 1920x1080 viewport; large empty cream area between the credits panel and the footer."]
+      },
+      {
+        "screen": "Mission result panel",
+        "issues": ["Evaluator label reads 'regole (fallback)' for M2 and M3, which are rule-based BY DESIGN - the word 'fallback' wrongly suggests the LLM failed."]
+      }
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/conftest.py",
+    "/app/backend/tests/test_health.py",
+    "/app/backend/tests/test_missions.py",
+    "/app/backend/tests/test_teacher.py",
+    "/app/backend/tests/test_progress_persistence.py",
+    "/app/backend/tests/test_hint_edge.py",
+    "/app/backend/tests/test_rules_rca.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [
+    "CRITICAL - Fix the M1 rules veto: either stop letting rules_eval_m1 override a valid LLM pass (server.py line 297), or fix rules_eval_m1 to count distinct causes properly (collect ALL keyword hits per item, or dedupe by item index instead of hits[0]). Verify with: Versailles S01 + crisi 1929 S02 + Societa' delle Nazioni S10.",
+    "CRITICAL - Persist current_mission: add 'current_mission': session['current_mission'] to the $set in recompute() (or update it in attempt()).",
+    "HIGH - MissionRail: derive unlocked from max(route num, session.current_mission) so resumed sessions are navigable.",
+    "MEDIUM - take_hint: do not apply HINT_PENALTY once the mission is completed & passed; also hide hint-btn after a pass.",
+    "MEDIUM - Mission.jsx submit(): clear result (setResult(null)) before awaiting the attempt so stale verdicts are not shown during LLM latency.",
+    "LOW - Require the teacher pin on GET /api/teacher/leaderboard.",
+    "LOW - Reject attempts on a mission already completed by forced unlock (attempts >= MAX_ATTEMPTS), and show an OVR badge on overridden cells in the teacher grid."
+  ],
+  "critical_code_review_comments": [
+    "server.py:297 `ev.passed = ev.passed and fallback.passed if fallback.passed is False else ev.passed` is unreadable and semantically just `ev.passed = ev.passed and fallback.passed`. It silently makes the brittle keyword matcher the final authority over the LLM - the root cause of the M1 defect. Either drop the veto or make the rules check a soft signal (e.g. needs_teacher_review=True) instead of a hard fail.",
+    "server.py recompute() is the only writer for post-attempt state but its $set list is hand-maintained and already out of sync with the mutated session dict (current_mission missing). Persist the whole session document, or centralise the field list.",
+    "server.py:224 take_hint mixes 'record hint usage' with 'retroactively re-price a finished mission' in one ternary; the penalty belongs in scoring.mission_points at attempt time only.",
+    "llm_eval.rules_eval_m1 counts distinctness by keyword (hits[0]) rather than by cause item, so distinct causes sharing a common word ('crisi') collapse and unrelated causes can also alias. Count one credit per validated item instead.",
+    "GET /api/teacher/leaderboard is the only /api/teacher/* route without check_teacher() - inconsistent authorisation."
+  ],
+  "updated_files": [
+    "/app/backend/tests/conftest.py",
+    "/app/backend/tests/test_health.py",
+    "/app/backend/tests/test_missions.py",
+    "/app/backend/tests/test_teacher.py",
+    "/app/backend/tests/test_progress_persistence.py",
+    "/app/backend/tests/test_hint_edge.py",
+    "/app/backend/tests/test_rules_rca.py"
+  ],
+  "success_rate": {"backend": "88%", "frontend": "85%"},
+  "seed_data_creation": "Students in class 5AIT created by tests: 'QA Tester', 'QA Flow 76735' (full run, 88 pt -> overridden to 100 pt / 2 h) plus ~20 'TEST *' students. Reference sessions: f40f03bf-5cd0-463f-98c5-3ed1f359d994 (finished, all missions, override on M1), 46ecdee0-4728-48e8-8c92-207aea396ba2 (M1 forced unlock, reproduces the resume dead-end).",
+  "should_call_test_agent_after_fix": true,
+  "should_main_agent_self_test": false,
+  "test_credentials": "Student: 5AIT / PIN 1939 / free name. Teacher: PIN 1918 on /docente. Matches /app/memory/test_credentials.md.",
+  "context_for_next_testing_agent": "Suite lives in /app/backend/tests (pytest.ini pre-set with -n 2 --dist loadscope; conftest reads REACT_APP_BACKEND_URL). Run: cd /app/backend && python -m pytest tests/ -q. Currently 36/41 pass; the 5 failures are the 3 reported bugs (test_rules_rca + test_missions::test_m1_pass = M1 veto; test_progress_persistence x2 = current_mission; test_hint_edge = retroactive hint penalty). test_missions.py::TestFullRun deliberately uses M1_GOOD_WORKAROUND (avoids repeating the 'crisi' keyword) so the rest of the flow can be validated - once the M1 bug is fixed, switch it to M1_GOOD and both should pass. VERIFIED WORKING and not worth re-testing in depth: M2/M3/M4/M5 pass+bonus paths, hint penalty from the 2nd attempt, forced unlock at attempt 3, credits/PBL conversion table, PDF (200 application/pdf, %PDF header), dossier drawer 12 cards + search filter, teacher login/grid/class filter/attempts log/override incl. 100-pt cap and validation of empty reason and out-of-range points. For M3 in Playwright, card ids C01-C08 are 'remota' and C09-C16 'immediata', readable straight from the data-testid m3-card-<CID>. IMPORTANT Playwright note: result-panel is not cleared between attempts, so poll until its text CHANGES before asserting, otherwise you read the previous verdict (this caused two false negatives in this iteration).",
+  "rca_of_the_issue": "Bug 1 (M1): server.evaluate() lets rules_eval_m1 veto the LLM verdict. rules_eval_m1 splits the answer into items and, per item, appends only hits[0] from VALID_CAUSE_KEYWORDS, then counts len(set(matched)). Because 'crisi' appears in both 'la crisi del 1929' and 'la crisi della Societa' delle Nazioni', two historically distinct causes register as one keyword -> distinct=2, passed=False, which overrides the LLM's score of 80-100. Repro: POST /api/missions/1/attempt with the three spec causes; unit repro in tests/test_rules_rca.py. Mitigation: remove the hard veto or count distinctness per item. Bug 2 (progress): attempt() mutates s['current_mission'] but recompute() persists only 6 named fields, so the value is dropped; GET returns 1 while the POST response says 3. The frontend MissionRail then computes unlocked from the route param, so on reload every later mission tab is disabled and no next button exists -> dead end. Mitigation: add current_mission to the $set and use max(routeNum, session.current_mission) in the rail. Bug 3 (hint): take_hint re-prices an already-completed mission, subtracting HINT_PENALTY from stored points; since hint-btn is never hidden after a pass, a passed 16-pt mission silently drops to 11."
+}

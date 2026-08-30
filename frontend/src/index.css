@@ -1,0 +1,110 @@
+@import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap");
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    :root {
+        --background: 48 88% 90%;
+        --foreground: 33 15% 15%;
+        --card: 40 55% 90%;
+        --card-foreground: 33 15% 15%;
+        --popover: 48 88% 90%;
+        --popover-foreground: 33 15% 15%;
+        --primary: 45 68% 50%;
+        --primary-foreground: 33 15% 15%;
+        --secondary: 40 40% 85%;
+        --secondary-foreground: 33 15% 15%;
+        --muted: 40 30% 84%;
+        --muted-foreground: 36 13% 32%;
+        --accent: 45 68% 50%;
+        --accent-foreground: 33 15% 15%;
+        --destructive: 0 40% 44%;
+        --destructive-foreground: 48 88% 95%;
+        --border: 45 45% 70%;
+        --input: 45 45% 70%;
+        --ring: 45 68% 50%;
+        --radius: 0.75rem;
+    }
+}
+
+@layer base {
+    * {
+        @apply border-border;
+    }
+    body {
+        margin: 0;
+        background-color: #fdf3d0;
+        color: #2b2620;
+        font-family: "Crimson Text", Georgia, serif;
+        -webkit-font-smoothing: antialiased;
+    }
+    ::selection {
+        background: #d4a72c;
+        color: #2b2620;
+    }
+    *:focus-visible {
+        outline: 2px solid #d4a72c;
+        outline-offset: 2px;
+    }
+}
+
+.paper {
+    background-image: radial-gradient(
+            rgba(43, 38, 32, 0.035) 1px,
+            transparent 1px
+        ),
+        radial-gradient(rgba(43, 38, 32, 0.025) 1px, transparent 1px);
+    background-size:
+        22px 22px,
+        13px 13px;
+    background-position:
+        0 0,
+        7px 9px;
+}
+
+.title {
+    font-family: "Cormorant Garamond", Georgia, serif;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    font-weight: 700;
+}
+
+.mono {
+    font-family: "IBM Plex Mono", monospace;
+}
+
+.ai-panel {
+    background: #241f1a;
+    color: #efe4c3;
+    font-family: "IBM Plex Mono", monospace;
+    box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.55);
+}
+.ai-panel::selection,
+.ai-panel *::selection {
+    background: #d4a72c;
+    color: #241f1a;
+}
+
+.card-nm {
+    background: #f5ead6;
+    border: 1px solid rgba(212, 167, 44, 0.5);
+    box-shadow: 0 4px 24px rgba(43, 38, 32, 0.08);
+}
+
+.hairline {
+    background: repeating-linear-gradient(
+        90deg,
+        rgba(212, 167, 44, 0.7) 0px,
+        rgba(212, 167, 44, 0.7) 8px,
+        transparent 8px,
+        transparent 14px
+    );
+    height: 2px;
+}
+
+@layer base {
+    [data-debug-wrapper="true"] {
+        display: contents !important;
+    }
+}
